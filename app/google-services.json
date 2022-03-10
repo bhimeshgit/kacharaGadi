@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "292938316808",
+    "project_id": "atootdor",
+    "storage_bucket": "atootdor.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:292938316808:android:0c718f7f26dcb2550025bd",
+        "android_client_info": {
+          "package_name": "com.persist.solution.atootdor"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "292938316808-32125k6lsevoaug8g6vtapu3bjombbh1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjr4BkHv3rmihEv9RVvBiaaNQpgwhumQs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "292938316808-32125k6lsevoaug8g6vtapu3bjombbh1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,20 @@
+<resources>
+    <style name="AppTheme.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+
+    <style name="MyProgressTheme" parent="android:Theme.Holo.Dialog">
+        <item name="android:alertDialogStyle">@style/MyDialogStyle</item>
+        <item name="android:windowBackground">@color/transparent</item>
+        <item name="android:textColorPrimary">#eb4d97</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:textColor">#eb4d97</item>
+        <item name="android:indeterminateTint">#eb4d97</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+</resources>
