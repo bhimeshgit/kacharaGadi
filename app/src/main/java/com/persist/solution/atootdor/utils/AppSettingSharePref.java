@@ -101,4 +101,27 @@ public class AppSettingSharePref {
         return username;
     }
 
+    public String getDriverMob() {
+        String username = "";
+        try {
+            username = sharePre.getString("driver_mobile", "");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return username;
+    }
+
+    public void setDriverMob(String token) {
+        editor.putString("driver_mobile", token);
+        editor.apply();
+    }
+
+    public boolean isDriverTrackingVisible() {
+        return  sharePre.getBoolean("driver_tracking_visible", false);
+    }
+
+    public void setDriverTrackingVisible(boolean username) {
+        editor.putBoolean("driver_tracking_visible", username);
+        editor.apply();
+    }
 }

@@ -29,6 +29,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.persist.solution.atootdor.service.GetDriverLocationWorker;
 
 import java.util.concurrent.TimeUnit;
 
@@ -71,7 +72,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         BitMapMarker = Bitmap.createScaledBitmap(b, 110, 60, false);
 
         workManager = WorkManager.getInstance(getContext());
-        workRequest = new PeriodicWorkRequest.Builder(LocationUpdateWorker.class, 15, TimeUnit.MINUTES).build();
+        workRequest = new PeriodicWorkRequest.Builder(GetDriverLocationWorker.class, 15, TimeUnit.MINUTES).build();
         workManager.enqueue(workRequest);
 
 
@@ -104,19 +105,20 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                         getActivity().runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                if(carMarker == null) {
-                                    LatLng latlng = new LatLng(DRIVER_LATITUDE, DRIVER_LONGITUDE);
-                                    carMarker = mMap.addMarker(new MarkerOptions().position(latlng).
-                                            flat(true).icon(BitmapDescriptorFactory.fromBitmap(BitMapMarker)));
-                                    CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(
-                                            latlng, 17f);
-                                    mMap.animateCamera(cameraUpdate);
+                                if (DRIVER_LATITUDE!= 0 && DRIVER_LONGITUDE != 0) {
+                                    if (carMarker == null) {
+                                        LatLng latlng = new LatLng(DRIVER_LATITUDE, DRIVER_LONGITUDE);
+                                        carMarker = mMap.addMarker(new MarkerOptions().position(latlng).
+                                                flat(true).icon(BitmapDescriptorFactory.fromBitmap(BitMapMarker)));
+                                        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(
+                                                latlng, 17f);
+                                        mMap.animateCamera(cameraUpdate);
+                                    }
+                                    Bearing = getBearing();
+                                    LatLng updatedLatLng = new LatLng(DRIVER_LATITUDE, DRIVER_LONGITUDE);
+                                    Log.d("iss", "lst=" + LAST_DRIVER_LATITUDE + " lat=" + DRIVER_LATITUDE);
+                                    changePositionSmoothly(carMarker, updatedLatLng, Bearing);
                                 }
-                                Bearing = getBearing();
-                                LatLng updatedLatLng = new LatLng(DRIVER_LATITUDE, DRIVER_LONGITUDE);
-                                Log.d("iss","lst="+LAST_DRIVER_LATITUDE+" lat="+DRIVER_LATITUDE);
-                                changePositionSmoothly(carMarker, updatedLatLng, Bearing);
-
                             }
                         });
 

@@ -9,6 +9,9 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
+import androidx.work.WorkRequest;
 
 import android.Manifest;
 import android.app.Activity;
@@ -53,12 +56,16 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.messaging.FirebaseMessaging;
+import com.persist.solution.atootdor.service.DriverLocationUpdateWorker;
+import com.persist.solution.atootdor.service.UserUpdateLocationWorker;
 import com.persist.solution.atootdor.utils.AppSettingSharePref;
 import com.persist.solution.atootdor.utils.JsonParserVolley;
 import com.persist.solution.atootdor.utils.ProgressDialogHelper;
 import com.persist.solution.atootdor.utils.UrlHander;
 import com.persist.solution.atootdor.utils.WebUrl;
 import com.persist.solution.atootdor.R;
+
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
@@ -68,6 +75,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity   {
 
@@ -78,7 +86,7 @@ public class MainActivity extends AppCompatActivity   {
     String[] permissions= new String[]{
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.READ_CONTACTS,
+            Manifest.permission.READ_CONTACTS, Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.CALL_PHONE,Manifest.permission.CAMERA};
     ConnectivityManager mConnectivityManager;
     ConnectivityManager.NetworkCallback mNetworkCallback ;
@@ -88,12 +96,13 @@ public class MainActivity extends AppCompatActivity   {
     public static final int REQUEST_SELECT_FILE = 100;
     private final static int FILECHOOSER_RESULTCODE = 1;
     private final String share_link_url = "http://www.atootdor.com";
+    MapFragment map_fragment;
 
     FloatingActionButton mAddFab;
     public static final int MULTIPLE_PERMISSIONS = 10;
-    String url_load = "https://rjorg.in/olacab2/app/index.php";//"http://www.atootdor.com/app_atoot7/login.php";
-    String login_url = "https://rjorg.in/olacab2/app/index.php";//"http://www.atootdor.com/app_atoot7/login.php";
-    String url_load_inapp = "https://rjorg.in/olacab2/app/index.php";//"http://www.atootdor.com/app_atoot7/home.php";
+    String url_load = WebUrl.MAIN_USER_URL;//"http://www.atootdor.com/app_atoot7/login.php";
+    String login_url = WebUrl.MAIN_USER_URL;//"http://www.atootdor.com/app_atoot7/login.php";
+    String url_load_inapp = WebUrl.MAIN_USER_HOME_URL;//"http://www.atootdor.com/app_atoot7/home.php";
 
     String offline_url = "file:///android_asset/app/offline.html";
     String currentUrl = url_load;
@@ -104,11 +113,23 @@ public class MainActivity extends AppCompatActivity   {
     long reference = -1;long id = -2;
     private LinearLayoutCompat mainLinLay;
     private FrameLayout mapFrameLay;
+    public static double DRIVER_LATITUDE = 0;
+    public static double DRIVER_LONGITUDE = 0;
+    public static double USER_LATITUDE = 0;
+    public static double USER_LONGITUDE = 0;
+    String mode = "user";
+//    String mode = "driver";
+    int LOCATION_REQUEST_CODE = 10001;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
+        if (mode.equals("driver")){
+            url_load = WebUrl.MAIN_DRIVER_URL;
+            login_url = WebUrl.MAIN_DRIVER_URL;
+            url_load_inapp = WebUrl.MAIN_DRIVER_HOME_URL;
+        }
         mainLinLay = findViewById(R.id.mainLinLay);
         mySwipeRefreshLayout = (SwipeRefreshLayout)this.findViewById(R.id.swipeContainer);
         mapFrameLay = findViewById(R.id.mapFrameLay);
@@ -119,13 +140,15 @@ public class MainActivity extends AppCompatActivity   {
         setWebView();
     }
 
-    private void addMapFragment(){
+    private void addMapFragment() {
         mainLinLay.setVisibility(View.GONE);
         mapFrameLay.setVisibility(View.VISIBLE);
+        map_fragment = new MapFragment();
         getSupportFragmentManager()
                 .beginTransaction()
-                .replace(R.id.mapFrameLay, new MapFragment())
+                .replace(R.id.mapFrameLay, map_fragment)
                 .commit();
+        AppSettingSharePref.getInstance(MainActivity.this).setDriverTrackingVisible(true);
     }
 
     private void setWebView(){
@@ -370,6 +393,16 @@ public class MainActivity extends AppCompatActivity   {
 
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+//            checkSettingsAndStartLocationUpdates();
+        } else {
+                askLocationPermission();
+        }
+    }
+
 
 
     private void getDataFromNotification(){
@@ -525,6 +558,18 @@ public class MainActivity extends AppCompatActivity   {
 
     @Override
     public void onBackPressed() {
+        if (mainLinLay.getVisibility() == View.GONE) {
+            if (AppSettingSharePref.getInstance(MainActivity.this).isDriverTrackingVisible()) {
+                mainLinLay.setVisibility(View.VISIBLE);
+                mapFrameLay.setVisibility(View.GONE);
+                if (map_fragment != null) {
+                    getSupportFragmentManager().beginTransaction().remove(map_fragment).commit();
+                }
+                AppSettingSharePref.getInstance(MainActivity.this).setDriverTrackingVisible(false);
+                return;
+            }
+        }
+
         if(main_content.getVisibility() == View.GONE){
             main_content.setVisibility(View.VISIBLE);
             imageView2.setVisibility(View.GONE);
@@ -658,7 +703,7 @@ public class MainActivity extends AppCompatActivity   {
             handler.post(new Runnable() {
                 @Override
                 public void run() {
-                    showProgressLoad();
+//                    showProgressLoad();
                     final JsonParserVolley jsonParserVolley = new JsonParserVolley(MainActivity.this);
                     jsonParserVolley.addParameter("username", Username);
                     jsonParserVolley.addParameter("token", AppSettingSharePref.getInstance(MainActivity.this).getToken());
@@ -666,25 +711,23 @@ public class MainActivity extends AppCompatActivity   {
                     jsonParserVolley.executeRequest(Request.Method.POST, WebUrl.REGISTER_TOKEN ,new JsonParserVolley.VolleyCallback() {
                                 @Override
                                 public void getResponse(String response) {
-                                    hideProgressLoad();
-                                    Log.d("iss","response="+response);
                                     try {
-//                                JSONObject jsonObject=new JSONObject(response);
-//                                int success=jsonObject.getInt("success");
-//                                if(success==1){
-//
-//                                }
-//                                else{
-//                                    Toast.makeText(currentActivity,jsonObject.getString("message"),Toast.LENGTH_SHORT).show();
-//                                }
+                                        hideProgressLoad();
+                                        Log.d("iss","response="+response);
+
                                     } catch (Exception e) {
                                         e.printStackTrace();
+                                        hideProgressLoad();
                                     }
                                 }
                             }
                     );
                 }
             });
+
+            if (mode.equals("user")) {
+                startUpdatingUserLocation();
+            }
 
         }
 
@@ -871,13 +914,71 @@ public class MainActivity extends AppCompatActivity   {
             });
         }
 
+        @JavascriptInterface
+        public void startDriverTracking(String mobNo, String uid) {
+
+            Handler handler = new Handler(Looper.getMainLooper());
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    Log.d("iss", "startDriverTracking called mobNo"+mobNo);
+                    AppSettingSharePref.getInstance(mContext).setDriverMob(mobNo);
+                    startTracking();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void showUserLocationToDriver(String uid, String pickup_latitude, String pickup_longitide) {
+            Handler handler = new Handler(Looper.getMainLooper());
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    displayUserLocationToDriver(uid, pickup_latitude, pickup_longitide);
+                }
+            });
+        }
+
+
+        @JavascriptInterface
+        public void startRide(String uid, String destLat, String longiude) {
+            Handler handler = new Handler(Looper.getMainLooper());
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    showUserRideToDriver(destLat, longiude);
+                }
+            });
+        }
+
+
+
 
         @JavascriptInterface
         public void setUserPopup() {
             AppSettingSharePref.getInstance(MainActivity.this).setPopup();
         }
 
+    }
 
+    private void startTracking() {
+        WorkManager workManager;
+        WorkRequest workRequest;
+        workManager = WorkManager.getInstance(getApplicationContext());
+        workRequest = new PeriodicWorkRequest.Builder(DriverLocationUpdateWorker.class, 15, TimeUnit.MINUTES).build();
+        workManager.enqueue(workRequest);
+//        workManager.cancelWorkById(workRequest.getId());
+    }
+
+    private void askLocationPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                Log.d("Location", "askLocationPermission: you should show an alert dialog...");
+                ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_REQUEST_CODE);
+            } else {
+                ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_REQUEST_CODE);
+            }
+        }
     }
 
     @Override
@@ -1028,6 +1129,35 @@ public class MainActivity extends AppCompatActivity   {
     private void openPdfReport(String pdfUrl){
         Intent intent = new Intent(MainActivity.this, Sample.class);
         intent.putExtra("pdf_url", pdfUrl);
+        startActivity(intent);
+    }
+
+    private void displayUserLocationToDriver(String uid, String pickup_latitude, String pickup_longitide) {
+        String sourceLatlng = DRIVER_LATITUDE+ ","+ DRIVER_LONGITUDE;
+        String destLatlng = pickup_latitude + "," + pickup_longitide;
+        Uri uri = Uri.parse("https://www.google.co.in/maps/dir/"+sourceLatlng+"/"+destLatlng);
+        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        intent.setPackage("com.google.android.apps.maps");
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+    }
+
+    private void startUpdatingUserLocation(){
+        WorkManager workManager;
+        WorkRequest workRequest;
+        workManager = WorkManager.getInstance(getApplicationContext());
+        workRequest = new PeriodicWorkRequest.Builder(UserUpdateLocationWorker.class, 15, TimeUnit.MINUTES).build();
+        workManager.enqueue(workRequest);
+//        workManager.cancelWorkById(workRequest.getId());
+    }
+
+    private void showUserRideToDriver(String destLat, String destLongitude) {
+        String sourceLatlng = DRIVER_LATITUDE+ ","+ DRIVER_LONGITUDE;
+        String destLatlng = destLat + "," + destLongitude;
+        Uri uri = Uri.parse("https://www.google.co.in/maps/dir/"+sourceLatlng+"/"+destLatlng);
+        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        intent.setPackage("com.google.android.apps.maps");
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }
 }

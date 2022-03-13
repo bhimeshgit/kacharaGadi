@@ -1,4 +1,4 @@
-package com.persist.solution.atootdor;
+package com.persist.solution.atootdor.service;
 
 import android.content.Context;
 import android.util.Log;
@@ -8,15 +8,17 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.android.volley.Request;
+import com.persist.solution.atootdor.MapFragment;
 import com.persist.solution.atootdor.utils.AppSettingSharePref;
 import com.persist.solution.atootdor.utils.JsonParserVolley;
+import com.persist.solution.atootdor.utils.WebUrl;
 
 import org.json.JSONObject;
 
-public class LocationUpdateWorker extends Worker {
+public class GetDriverLocationWorker extends Worker {
     public static boolean workedStopped = false;
 
-    public LocationUpdateWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
+    public GetDriverLocationWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
     }
 
@@ -25,11 +27,11 @@ public class LocationUpdateWorker extends Worker {
             Thread.sleep(5000);
             MapFragment.LAST_DRIVER_LATITUDE =  MapFragment.DRIVER_LATITUDE;
             MapFragment.LAST_DRIVER_LONGITUDE =  MapFragment.DRIVER_LONGITUDE;
-            Log.d("worker", MapFragment.DRIVER_LATITUDE + "  " +MapFragment.DRIVER_LONGITUDE);
+            Log.d("worker", "USER = " +MapFragment.DRIVER_LATITUDE + "  " +MapFragment.DRIVER_LONGITUDE);
 
             final JsonParserVolley jsonParserVolley = new JsonParserVolley(getApplicationContext());
             jsonParserVolley.addParameter("mobile",  AppSettingSharePref.getInstance(getApplicationContext()).getDriverMobNo() );
-            jsonParserVolley.executeRequest(Request.Method.POST, "https://rjorg.in/olacab2/app/location-fetch-webservice.php" ,new JsonParserVolley.VolleyCallback() {
+            jsonParserVolley.executeRequest(Request.Method.POST, WebUrl.GET_DRIVER_LOCATION,new JsonParserVolley.VolleyCallback() {
                         @Override
                         public void getResponse(String response) throws InterruptedException {
                             try {
