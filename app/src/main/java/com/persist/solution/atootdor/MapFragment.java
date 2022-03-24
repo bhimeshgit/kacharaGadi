@@ -90,18 +90,27 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         return (float)brng;
     }
 
+    private void createUserPositionMarker(){
+        LatLng sydney = new LatLng(-33.852, 151.211);
+        mMap.addMarker(new MarkerOptions()
+                .position(sydney)
+                .title("Pickup Location"));
+    }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
 
         mMap = googleMap;
 
+        if(MainActivity.PICKUP_LATITUDE!=0 && MainActivity.PICKUP_LONGITUDE!=0) {
+            createUserPositionMarker();
+        }
+
         Thread t = new Thread() {
             @Override
             public void run() {
                 while (!isInterrupted()) {
                     try {
-                        Thread.sleep(10000);  //1000ms = 1 sec
                         getActivity().runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -121,7 +130,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                                 }
                             }
                         });
-
+                        Thread.sleep(5000);   //1000ms = 1 sec
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }

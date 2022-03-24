@@ -117,6 +117,9 @@ public class MainActivity extends AppCompatActivity   {
     public static double DRIVER_LONGITUDE = 0;
     public static double USER_LATITUDE = 0;
     public static double USER_LONGITUDE = 0;
+    public static double PICKUP_LATITUDE = 0;
+    public static double PICKUP_LONGITUDE = 0;
+
     String mode = "user";
 //    String mode = "driver";
     int LOCATION_REQUEST_CODE = 10001;
@@ -902,12 +905,16 @@ public class MainActivity extends AppCompatActivity   {
         }
 
         @JavascriptInterface
-        public void showDriverTracking(String driverMob) {
+        public void showDriverTracking(String driverMob, String driverLatitude, String driverLong, String pickupLat, String pickupLong) {
 
             Handler handler = new Handler(Looper.getMainLooper());
             handler.post(new Runnable() {
                 @Override
                 public void run() {
+                    DRIVER_LATITUDE = Double.parseDouble(driverLatitude);
+                    DRIVER_LONGITUDE = Double.parseDouble(driverLong);
+                    PICKUP_LATITUDE = Double.parseDouble(pickupLat);
+                    PICKUP_LONGITUDE = Double.parseDouble(pickupLong);
                     AppSettingSharePref.getInstance(MainActivity.this).setDriverMobNo(driverMob);
                     addMapFragment();
                 }
