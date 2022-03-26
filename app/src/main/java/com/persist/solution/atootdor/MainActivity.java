@@ -158,8 +158,8 @@ public class MainActivity extends AppCompatActivity   {
         if(Utils.isNetworkAvailable(MainActivity.this)) {
             getDataFromNotification();
         } else {
-            myWebView.loadUrl(offline_url);
-            currentUrl = offline_url;
+//            myWebView.loadUrl(offline_url);
+//            currentUrl = offline_url;
         }
 
         myWebView.getSettings().setJavaScriptEnabled(true);
@@ -292,9 +292,9 @@ public class MainActivity extends AppCompatActivity   {
                     myWebView.goBack();
                 }
                 if(!netAvailable){
-                    currentUrl = offline_url;
-                    myWebView.loadUrl(currentUrl);
-                    url = offline_url;
+//                    currentUrl = offline_url;
+//                    myWebView.loadUrl(currentUrl);
+//                    url = offline_url;
                 }
 
                 boolean result = UrlHander.checkUrl(MainActivity.this, url);
