@@ -25,9 +25,9 @@ public class GetDriverLocationWorker extends Worker {
     void updateLocation() throws InterruptedException {
         while(!workedStopped){
             Thread.sleep(5000);
-            MapFragment.LAST_DRIVER_LATITUDE =  MapFragment.DRIVER_LATITUDE;
-            MapFragment.LAST_DRIVER_LONGITUDE =  MapFragment.DRIVER_LONGITUDE;
-            Log.d("worker", "USER = " +MapFragment.DRIVER_LATITUDE + "  " +MapFragment.DRIVER_LONGITUDE);
+            WebUrl.LAST_DRIVER_LATITUDE =  WebUrl.DRIVER_LATITUDE;
+            WebUrl.LAST_DRIVER_LONGITUDE =  WebUrl.DRIVER_LONGITUDE;
+            Log.d("worker", "USER = " +WebUrl.DRIVER_LATITUDE + "  " +WebUrl.DRIVER_LONGITUDE);
 
             final JsonParserVolley jsonParserVolley = new JsonParserVolley(getApplicationContext());
             jsonParserVolley.addParameter("mobile",  AppSettingSharePref.getInstance(getApplicationContext()).getDriverMobNo() );
@@ -37,8 +37,8 @@ public class GetDriverLocationWorker extends Worker {
                             try {
                                 Log.d("iss","response="+response);
                                 JSONObject jsonObject=new JSONObject(response);
-                                MapFragment.DRIVER_LATITUDE = Double.parseDouble(jsonObject.getString("lat"));
-                                MapFragment.DRIVER_LONGITUDE = Double.parseDouble(jsonObject.getString("lang"));
+                                WebUrl.DRIVER_LATITUDE = Double.parseDouble(jsonObject.getString("lat"));
+                                WebUrl.DRIVER_LONGITUDE = Double.parseDouble(jsonObject.getString("lang"));
 
                             } catch (Exception e) {
                                 e.printStackTrace();

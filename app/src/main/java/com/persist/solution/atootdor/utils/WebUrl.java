@@ -2,6 +2,13 @@ package com.persist.solution.atootdor.utils;
 
 public class WebUrl {
 
+    public static double DRIVER_LATITUDE = 0;
+    public static double DRIVER_LONGITUDE = 0;
+    public static double LAST_DRIVER_LATITUDE = 0;
+    public static double LAST_DRIVER_LONGITUDE = 0;
+
+
+
     public static String REGISTER_TOKEN = "http://www.atootdor.com/app_atoot5/token-web-service.php";
 
 

@@ -38,9 +38,9 @@ public class DriverLocationUpdateWorker extends Worker {
                 return;
             }
             for(Location location: locationResult.getLocations()) {
-                MainActivity.DRIVER_LATITUDE = location.getLatitude();
-                MainActivity.DRIVER_LONGITUDE = location.getLongitude();
-                Log.d("ne_loc","DRIVER_LATITUDE="+MainActivity.DRIVER_LATITUDE+" MainActivity.DRIVER_LONGITUDE="+MainActivity.DRIVER_LONGITUDE);
+                WebUrl.DRIVER_LATITUDE = location.getLatitude();
+                WebUrl.DRIVER_LONGITUDE = location.getLongitude();
+                Log.d("ne_loc","DRIVER_LATITUDE="+WebUrl.DRIVER_LATITUDE+" MainActivity.DRIVER_LONGITUDE="+WebUrl.DRIVER_LONGITUDE);
             }
         }
     };
@@ -58,11 +58,11 @@ public class DriverLocationUpdateWorker extends Worker {
     void updateLocation() throws InterruptedException {
         while(!workedStopped){
             Thread.sleep(5000);
-            Log.d("iss", "Drivver = " + MainActivity.DRIVER_LATITUDE + "  " +MainActivity.DRIVER_LONGITUDE);
+            Log.d("iss", "Drivver = " + WebUrl.DRIVER_LATITUDE + "  " +WebUrl.DRIVER_LONGITUDE);
             final JsonParserVolley jsonParserVolley = new JsonParserVolley(getApplicationContext());
             jsonParserVolley.addParameter("mobile", AppSettingSharePref.getInstance(getApplicationContext()).getDriverMob());
-            jsonParserVolley.addParameter("lat", MainActivity.DRIVER_LATITUDE+"" );
-            jsonParserVolley.addParameter("lang",MainActivity.DRIVER_LONGITUDE+"" );
+            jsonParserVolley.addParameter("lat", WebUrl.DRIVER_LATITUDE+"" );
+            jsonParserVolley.addParameter("lang",WebUrl.DRIVER_LONGITUDE+"" );
             jsonParserVolley.executeRequest(Request.Method.POST, WebUrl.UPDATE_DRIVER_LOCATION ,new JsonParserVolley.VolleyCallback() {
                         @Override
                         public void getResponse(String response) {

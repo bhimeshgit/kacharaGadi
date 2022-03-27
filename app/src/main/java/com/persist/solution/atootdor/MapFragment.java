@@ -19,6 +19,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.Interpolator;
+import android.widget.Button;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -30,6 +31,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.persist.solution.atootdor.service.GetDriverLocationWorker;
+import com.persist.solution.atootdor.utils.WebUrl;
 
 import java.util.concurrent.TimeUnit;
 
@@ -42,14 +44,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     boolean AnimationStatus = false;
     static Marker carMarker;
     Bitmap BitMapMarker;
-
-    public static double DRIVER_LATITUDE = 0;
-    public static double DRIVER_LONGITUDE = 0;
-    public static double LAST_DRIVER_LATITUDE = 0;
-    public static double LAST_DRIVER_LONGITUDE = 0;
+    private Button startRideBtn;
     private WorkManager workManager;
     private WorkRequest workRequest;
-    public MapFragment() {
+    private Thread thread;
+    private MainActivity mainActivity;
+    public MapFragment(MainActivity mainActivity) {
+        this.mainActivity = mainActivity;
         // Required empty public constructor
     }
 
@@ -75,16 +76,25 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         workRequest = new PeriodicWorkRequest.Builder(GetDriverLocationWorker.class, 15, TimeUnit.MINUTES).build();
         workManager.enqueue(workRequest);
 
-
+        startRideBtn = view.findViewById(R.id.startRideBtn);
         SupportMapFragment supportMapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.google_map);
         supportMapFragment.getMapAsync(this);
 
+        startRideBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mainActivity.onBackPressed();
+            }
+        });
+
     }
+
+
     
     float getBearing(){
-        double dLon = (DRIVER_LONGITUDE-LAST_DRIVER_LONGITUDE);
-        double y = Math.sin(dLon) * Math.cos(DRIVER_LATITUDE);
-        double x = Math.cos(LAST_DRIVER_LATITUDE)*Math.sin(DRIVER_LATITUDE) - Math.sin(LAST_DRIVER_LATITUDE)*Math.cos(DRIVER_LATITUDE)*Math.cos(dLon);
+        double dLon = (WebUrl.DRIVER_LONGITUDE-WebUrl.LAST_DRIVER_LONGITUDE);
+        double y = Math.sin(dLon) * Math.cos(WebUrl.DRIVER_LATITUDE);
+        double x = Math.cos(WebUrl.LAST_DRIVER_LATITUDE)*Math.sin(WebUrl.DRIVER_LATITUDE) - Math.sin(WebUrl.LAST_DRIVER_LATITUDE)*Math.cos(WebUrl.DRIVER_LATITUDE)*Math.cos(dLon);
         double brng = Math.toDegrees((Math.atan2(y, x)));
         brng = (360 - ((brng + 360) % 360));
         return (float)brng;
@@ -106,31 +116,36 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             createUserPositionMarker();
         }
 
-        Thread t = new Thread() {
+
+        thread = new Thread() {
             @Override
             public void run() {
                 while (!isInterrupted()) {
                     try {
-                        getActivity().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (DRIVER_LATITUDE!= 0 && DRIVER_LONGITUDE != 0) {
-                                    if (carMarker == null) {
-                                        LatLng latlng = new LatLng(DRIVER_LATITUDE, DRIVER_LONGITUDE);
-                                        carMarker = mMap.addMarker(new MarkerOptions().position(latlng).
-                                                flat(true).icon(BitmapDescriptorFactory.fromBitmap(BitMapMarker)));
-                                        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(
-                                                latlng, 17f);
-                                        mMap.animateCamera(cameraUpdate);
+                        if (MapFragment.this.isVisible() && getActivity() != null) {
+                            getActivity().runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (MapFragment.this.isVisible()) {
+                                        if (WebUrl.DRIVER_LATITUDE != 0 && WebUrl.DRIVER_LONGITUDE != 0) {
+                                            if (carMarker == null) {
+                                                LatLng latlng = new LatLng(WebUrl.DRIVER_LATITUDE, WebUrl.DRIVER_LONGITUDE);
+                                                carMarker = mMap.addMarker(new MarkerOptions().position(latlng).
+                                                        flat(true).icon(BitmapDescriptorFactory.fromBitmap(BitMapMarker)));
+                                                CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(
+                                                        latlng, 17f);
+                                                mMap.animateCamera(cameraUpdate);
+                                            }
+                                            Bearing = getBearing();
+                                            LatLng updatedLatLng = new LatLng(WebUrl.DRIVER_LATITUDE, WebUrl.DRIVER_LONGITUDE);
+                                            Log.d("iss", "lst=" + WebUrl.LAST_DRIVER_LATITUDE + " lat=" + WebUrl.DRIVER_LATITUDE);
+                                            changePositionSmoothly(carMarker, updatedLatLng, Bearing);
+                                        }
                                     }
-                                    Bearing = getBearing();
-                                    LatLng updatedLatLng = new LatLng(DRIVER_LATITUDE, DRIVER_LONGITUDE);
-                                    Log.d("iss", "lst=" + LAST_DRIVER_LATITUDE + " lat=" + DRIVER_LATITUDE);
-                                    changePositionSmoothly(carMarker, updatedLatLng, Bearing);
                                 }
-                            }
-                        });
-                        Thread.sleep(5000);   //1000ms = 1 sec
+                            });
+                            Thread.sleep(5000);   //1000ms = 1 sec
+                        }
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -138,13 +153,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             }
         };
 
-        t.start();
+        thread.start();
 
     }
 
     void changePositionSmoothly(final Marker myMarker, final LatLng newLatLng, final Float bearing) {
 
-        final LatLng startPosition = new LatLng(LAST_DRIVER_LATITUDE, LAST_DRIVER_LONGITUDE);
+        final LatLng startPosition = new LatLng(WebUrl.LAST_DRIVER_LATITUDE, WebUrl.LAST_DRIVER_LONGITUDE);
         final LatLng finalPosition = newLatLng;
         final Handler handler = new Handler();
         final long start = SystemClock.uptimeMillis();

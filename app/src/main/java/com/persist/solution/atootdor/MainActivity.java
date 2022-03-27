@@ -113,8 +113,6 @@ public class MainActivity extends AppCompatActivity   {
     long reference = -1;long id = -2;
     private LinearLayoutCompat mainLinLay;
     private FrameLayout mapFrameLay;
-    public static double DRIVER_LATITUDE = 0;
-    public static double DRIVER_LONGITUDE = 0;
     public static double USER_LATITUDE = 0;
     public static double USER_LONGITUDE = 0;
     public static double PICKUP_LATITUDE = 0;
@@ -146,7 +144,9 @@ public class MainActivity extends AppCompatActivity   {
     private void addMapFragment() {
         mainLinLay.setVisibility(View.GONE);
         mapFrameLay.setVisibility(View.VISIBLE);
-        map_fragment = new MapFragment();
+        if(map_fragment == null) {
+            map_fragment = new MapFragment(this);
+        }
         getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.mapFrameLay, map_fragment)
@@ -158,8 +158,8 @@ public class MainActivity extends AppCompatActivity   {
         if(Utils.isNetworkAvailable(MainActivity.this)) {
             getDataFromNotification();
         } else {
-//            myWebView.loadUrl(offline_url);
-//            currentUrl = offline_url;
+            myWebView.loadUrl(offline_url);
+            currentUrl = offline_url;
         }
 
         myWebView.getSettings().setJavaScriptEnabled(true);
@@ -292,9 +292,9 @@ public class MainActivity extends AppCompatActivity   {
                     myWebView.goBack();
                 }
                 if(!netAvailable){
-//                    currentUrl = offline_url;
-//                    myWebView.loadUrl(currentUrl);
-//                    url = offline_url;
+                    currentUrl = offline_url;
+                    myWebView.loadUrl(currentUrl);
+                    url = offline_url;
                 }
 
                 boolean result = UrlHander.checkUrl(MainActivity.this, url);
@@ -332,6 +332,7 @@ public class MainActivity extends AppCompatActivity   {
             public void onClick(View view) {
 //                shareApplication();
 //                shareApplication("enter ur message here", "application Name");
+                testMap();;
             }
         });
 
@@ -567,6 +568,8 @@ public class MainActivity extends AppCompatActivity   {
                 mapFrameLay.setVisibility(View.GONE);
                 if (map_fragment != null) {
                     getSupportFragmentManager().beginTransaction().remove(map_fragment).commit();
+                    getSupportFragmentManager().popBackStack();
+                    map_fragment = null;
                 }
                 AppSettingSharePref.getInstance(MainActivity.this).setDriverTrackingVisible(false);
                 return;
@@ -911,8 +914,8 @@ public class MainActivity extends AppCompatActivity   {
             handler.post(new Runnable() {
                 @Override
                 public void run() {
-                    DRIVER_LATITUDE = Double.parseDouble(driverLatitude);
-                    DRIVER_LONGITUDE = Double.parseDouble(driverLong);
+                    WebUrl.DRIVER_LATITUDE = Double.parseDouble(driverLatitude);
+                    WebUrl.DRIVER_LONGITUDE = Double.parseDouble(driverLong);
                     PICKUP_LATITUDE = Double.parseDouble(pickupLat);
                     PICKUP_LONGITUDE = Double.parseDouble(pickupLong);
                     AppSettingSharePref.getInstance(MainActivity.this).setDriverMobNo(driverMob);
@@ -1140,7 +1143,7 @@ public class MainActivity extends AppCompatActivity   {
     }
 
     private void displayUserLocationToDriver(String uid, String pickup_latitude, String pickup_longitide) {
-        String sourceLatlng = DRIVER_LATITUDE+ ","+ DRIVER_LONGITUDE;
+        String sourceLatlng = WebUrl.DRIVER_LATITUDE+ ","+ WebUrl.DRIVER_LONGITUDE;
         String destLatlng = pickup_latitude + "," + pickup_longitide;
         Uri uri = Uri.parse("https://www.google.co.in/maps/dir/"+sourceLatlng+"/"+destLatlng);
         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
@@ -1159,7 +1162,7 @@ public class MainActivity extends AppCompatActivity   {
     }
 
     private void showUserRideToDriver(String destLat, String destLongitude) {
-        String sourceLatlng = DRIVER_LATITUDE+ ","+ DRIVER_LONGITUDE;
+        String sourceLatlng = WebUrl.DRIVER_LATITUDE+ ","+ WebUrl.DRIVER_LONGITUDE;
         String destLatlng = destLat + "," + destLongitude;
         Uri uri = Uri.parse("https://www.google.co.in/maps/dir/"+sourceLatlng+"/"+destLatlng);
         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
@@ -1167,4 +1170,14 @@ public class MainActivity extends AppCompatActivity   {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }
+
+    public void testMap(){
+//        WebUrl.DRIVER_LATITUDE = 21.145702;//Double.parseDouble(driverLatitude);
+//        WebUrl.DRIVER_LONGITUDE = 79.006933;//Double.parseDouble(driverLong);
+//        PICKUP_LATITUDE = 21.10895;//Double.parseDouble(21.10895);
+//        PICKUP_LONGITUDE = 79.1082105 ;//Double.parseDouble(pickupLong);
+//        AppSettingSharePref.getInstance(MainActivity.this).setDriverMobNo("12345");
+//        addMapFragment();
+    }
+
 }
