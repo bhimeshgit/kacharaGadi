@@ -72,10 +72,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         Bitmap b = bitmapdraw.getBitmap();
         BitMapMarker = Bitmap.createScaledBitmap(b, 110, 60, false);
 
-        workManager = WorkManager.getInstance(getContext());
-        workRequest = new PeriodicWorkRequest.Builder(GetDriverLocationWorker.class, 15, TimeUnit.MINUTES).build();
-        workManager.enqueue(workRequest);
-
         startRideBtn = view.findViewById(R.id.startRideBtn);
         SupportMapFragment supportMapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.google_map);
         supportMapFragment.getMapAsync(this);
@@ -202,4 +198,29 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         });
     }
 
+    @Override
+    public void onPause() {
+        super.onPause();
+        WorkManager.getInstance(getContext()).cancelAllWorkByTag("ferDriverLoc");
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        workManager = WorkManager.getInstance(getContext());
+        workRequest = new PeriodicWorkRequest.Builder(GetDriverLocationWorker.class, 15, TimeUnit.MINUTES).addTag("ferDriverLoc").build();
+        workManager.enqueue(workRequest);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        carMarker =null;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        carMarker =null;
+    }
 }

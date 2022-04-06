@@ -299,11 +299,11 @@ public class MainActivity extends AppCompatActivity   {
 
                 boolean result = UrlHander.checkUrl(MainActivity.this, url);
                 if (result) {
-                    ProgressDialogHelper.dismissProgress();
+//                    ProgressDialogHelper.dismissProgress();
                 } else {
                     currentUrl = url;
                     if (!show_content) {
-                        ProgressDialogHelper.showProgress(MainActivity.this);
+//                        ProgressDialogHelper.showProgress(MainActivity.this);
                     }
                 }
 
@@ -332,7 +332,7 @@ public class MainActivity extends AppCompatActivity   {
             public void onClick(View view) {
 //                shareApplication();
 //                shareApplication("enter ur message here", "application Name");
-                testMap();;
+        //        testMap();;
             }
         });
 
@@ -1174,10 +1174,10 @@ public class MainActivity extends AppCompatActivity   {
     public void testMap(){
 //        WebUrl.DRIVER_LATITUDE = 21.145702;//Double.parseDouble(driverLatitude);
 //        WebUrl.DRIVER_LONGITUDE = 79.006933;//Double.parseDouble(driverLong);
-//        PICKUP_LATITUDE = 21.10895;//Double.parseDouble(21.10895);
-//        PICKUP_LONGITUDE = 79.1082105 ;//Double.parseDouble(pickupLong);
-//        AppSettingSharePref.getInstance(MainActivity.this).setDriverMobNo("12345");
-//        addMapFragment();
+        PICKUP_LATITUDE = 21.10895;//Double.parseDouble(21.10895);
+        PICKUP_LONGITUDE = 79.1082105 ;//Double.parseDouble(pickupLong);
+        AppSettingSharePref.getInstance(MainActivity.this).setDriverMobNo("12345");
+        addMapFragment();
     }
 
 }
