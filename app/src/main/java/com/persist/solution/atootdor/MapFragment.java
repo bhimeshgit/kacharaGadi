@@ -101,7 +101,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void createUserPositionMarker(){
-        LatLng sydney = new LatLng(-33.852, 151.211);
+        LatLng sydney = new LatLng(MainActivity.PICKUP_LATITUDE, MainActivity.PICKUP_LONGITUDE);
         mMap.addMarker(new MarkerOptions()
                 .position(sydney)
                 .title("Pickup Location"));
