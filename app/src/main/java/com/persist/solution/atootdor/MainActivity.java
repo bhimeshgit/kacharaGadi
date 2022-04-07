@@ -299,11 +299,11 @@ public class MainActivity extends AppCompatActivity   {
 
                 boolean result = UrlHander.checkUrl(MainActivity.this, url);
                 if (result) {
-//                    ProgressDialogHelper.dismissProgress();
+                    ProgressDialogHelper.dismissProgress();
                 } else {
                     currentUrl = url;
                     if (!show_content) {
-//                        ProgressDialogHelper.showProgress(MainActivity.this);
+                        ProgressDialogHelper.showProgress(MainActivity.this);
                     }
                 }
 
