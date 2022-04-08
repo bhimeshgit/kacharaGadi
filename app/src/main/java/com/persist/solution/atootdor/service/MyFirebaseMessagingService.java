@@ -5,6 +5,8 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -20,6 +22,9 @@ import com.persist.solution.atootdor.MainActivity;
 import com.persist.solution.atootdor.R;
 import com.persist.solution.atootdor.utils.AppSettingSharePref;
 
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Random;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
@@ -64,11 +69,32 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                     .setContentIntent(pendingIntent)
                     .setAutoCancel(true)  //dismisses the notification on click
                     .setSound(defaultSoundUri);
+            if (remoteMessage.getNotification().getImageUrl() != null) {
+                Bitmap bitmap = getBitmapfromUrl(remoteMessage.getData().get("image-url"));
+                notificationBuilder.setStyle(
+                        new NotificationCompat.BigPictureStyle()
+                                .bigPicture(bitmap)
+                                .bigLargeIcon(null)
+                ).setLargeIcon(bitmap);
+            }
 
             notificationManager.notify(notificationId /* ID of notification */, notificationBuilder.build());
         }
+    }
 
+    public Bitmap getBitmapfromUrl(String imageUrl) {
+        try {
+            URL url = new URL(imageUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setDoInput(true);
+            connection.connect();
+            InputStream input = connection.getInputStream();
+            return BitmapFactory.decodeStream(input);
 
+        } catch (Exception e) {
+            Log.e("awesome", "Error in getting notification image: " + e.getLocalizedMessage());
+            return null;
+        }
     }
     @RequiresApi(api = Build.VERSION_CODES.O)
     private void setupChannels(){
