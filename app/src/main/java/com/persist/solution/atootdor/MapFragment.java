@@ -30,9 +30,16 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.persist.solution.atootdor.service.GetDriverLocationWorker;
+import com.google.gson.Gson;
+import com.persist.solution.atootdor.service.GetAllVehicleLocationWorker;
+import com.persist.solution.atootdor.utils.AppSettingSharePref;
+import com.persist.solution.atootdor.utils.Data;
+import com.persist.solution.atootdor.utils.DataResponse;
 import com.persist.solution.atootdor.utils.WebUrl;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
@@ -42,11 +49,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     float Bearing = 0;
     boolean AnimationStatus = false;
-    static Marker carMarker;
+
     Bitmap BitMapMarker;
     private Button startRideBtn;
-    private WorkManager workManager;
-    private WorkRequest workRequest;
     private Thread thread;
     private MainActivity mainActivity;
     public MapFragment(MainActivity mainActivity) {
@@ -54,8 +59,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         // Required empty public constructor
     }
 
-
-
+    private ArrayList<Marker> carMarkerList= new ArrayList<>();
+    private HashMap<String, Marker> carMap = new HashMap<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -72,46 +77,27 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         Bitmap b = bitmapdraw.getBitmap();
         BitMapMarker = Bitmap.createScaledBitmap(b, 110, 60, false);
 
-        startRideBtn = view.findViewById(R.id.startRideBtn);
         SupportMapFragment supportMapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.google_map);
         supportMapFragment.getMapAsync(this);
-
-        startRideBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mainActivity.onBackPressed();
-            }
-        });
 
     }
 
 
     
-    float getBearing(){
-        double dLon = (WebUrl.DRIVER_LONGITUDE-WebUrl.LAST_DRIVER_LONGITUDE);
-        double y = Math.sin(dLon) * Math.cos(WebUrl.DRIVER_LATITUDE);
-        double x = Math.cos(WebUrl.LAST_DRIVER_LATITUDE)*Math.sin(WebUrl.DRIVER_LATITUDE) - Math.sin(WebUrl.LAST_DRIVER_LATITUDE)*Math.cos(WebUrl.DRIVER_LATITUDE)*Math.cos(dLon);
+    float getBearing(double old_longitude,double new_longitude,double old_lat, double new_lat){
+        double dLon = (new_longitude-old_longitude);
+        double y = Math.sin(dLon) * Math.cos(new_lat);
+        double x = Math.cos(old_lat)*Math.sin(new_lat) - Math.sin(old_lat)*Math.cos(new_lat)*Math.cos(dLon);
         double brng = Math.toDegrees((Math.atan2(y, x)));
         brng = (360 - ((brng + 360) % 360));
         return (float)brng;
     }
 
-    private void createUserPositionMarker(){
-        LatLng sydney = new LatLng(MainActivity.PICKUP_LATITUDE, MainActivity.PICKUP_LONGITUDE);
-        mMap.addMarker(new MarkerOptions()
-                .position(sydney)
-                .title("Pickup Location"));
-    }
+
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-
         mMap = googleMap;
-
-        if(MainActivity.PICKUP_LATITUDE!=0 && MainActivity.PICKUP_LONGITUDE!=0) {
-            createUserPositionMarker();
-        }
-
 
         thread = new Thread() {
             @Override
@@ -122,24 +108,68 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                             getActivity().runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    if (MapFragment.this.isVisible()) {
-                                        if (WebUrl.DRIVER_LATITUDE != 0 && WebUrl.DRIVER_LONGITUDE != 0) {
-                                            if (carMarker == null) {
-                                                LatLng latlng = new LatLng(WebUrl.DRIVER_LATITUDE, WebUrl.DRIVER_LONGITUDE);
-                                                carMarker = mMap.addMarker(new MarkerOptions().position(latlng).
-                                                        flat(true).icon(BitmapDescriptorFactory.fromBitmap(BitMapMarker)));
-                                                CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(
-                                                        latlng, 17f);
-                                                mMap.animateCamera(cameraUpdate);
+                                    try {
+                                        if (MapFragment.this.isVisible()) {
+//                                            if(rotation_temp == 0){
+//                                                AppSettingSharePref.getInstance(getContext()).setDeviceList(WebUrl.RESP1);
+//                                                AppSettingSharePref.getInstance(getContext()).setOldDeviceList(WebUrl.RESP1);
+//                                            } else{
+//                                                AppSettingSharePref.getInstance(getContext()).setOldDeviceList(WebUrl.RESP1);
+//                                                AppSettingSharePref.getInstance(getContext()).setDeviceList(WebUrl.RESP2);
+//                                            }
+
+
+                                            String newData = AppSettingSharePref.getInstance(getContext()).getDeviceList();
+                                            String oldData = AppSettingSharePref.getInstance(getContext()).getOldDeviceList();
+
+
+                                            if (newData != null && oldData != null) {
+                                                DataResponse newDataObj = new Gson().fromJson(newData, DataResponse.class);
+                                                DataResponse oldDataObj = new Gson().fromJson(oldData, DataResponse.class);
+                                                if (newDataObj != null) {
+                                                    for (int i = 0; i < newDataObj.count; i++) {
+                                                        Data data = newDataObj.data.get(i).data;
+                                                        double newLat = Double.parseDouble(data.cordinate.get(0));
+                                                        double newLong = Double.parseDouble(data.cordinate.get(1));
+                                                        LatLng newLatLong = new LatLng(newLat, newLong);
+                                                        for (Data oldDataListObj : oldDataObj.data) {
+                                                            if (data.vehicle_number.equals(oldDataListObj.data.vehicle_number)) {
+                                                                double oldLat = Double.parseDouble(oldDataListObj.data.cordinate.get(0));
+                                                                double oldLong = Double.parseDouble(oldDataListObj.data.cordinate.get(1));
+                                                                LatLng oldLatLong = new LatLng(oldLat, oldLong);
+                                                                Marker carMarker = null;
+                                                                if (!carMap.containsKey(oldDataListObj.data.vehicle_number)) {
+                                                                    carMarker = mMap.addMarker(new MarkerOptions().position(newLatLong).
+                                                                            flat(true).icon(BitmapDescriptorFactory.fromBitmap(BitMapMarker)));
+                                                                    CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(
+                                                                            newLatLong, 17f);
+                                                                    mMap.animateCamera(cameraUpdate);
+                                                                } else {
+                                                                    carMarker = carMap.get(oldDataListObj.data.vehicle_number);
+                                                                }
+                                                                if (!carMap.containsKey(oldDataListObj.data.vehicle_number)) {
+                                                                    carMap.put(oldDataListObj.data.vehicle_number, carMarker);
+                                                                }
+                                                                Bearing = getBearing(oldLong, newLong, oldLat, newLat);
+
+//                                                        Log.d("iss", "lst=" + WebUrl.LAST_DRIVER_LATITUDE + " lat=" + WebUrl.DRIVER_LATITUDE);
+                                                                changePositionSmoothly(carMarker, newLatLong, Bearing, oldLatLong);
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
                                             }
-                                            Bearing = getBearing();
-                                            LatLng updatedLatLng = new LatLng(WebUrl.DRIVER_LATITUDE, WebUrl.DRIVER_LONGITUDE);
-                                            Log.d("iss", "lst=" + WebUrl.LAST_DRIVER_LATITUDE + " lat=" + WebUrl.DRIVER_LATITUDE);
-                                            changePositionSmoothly(carMarker, updatedLatLng, Bearing);
+
                                         }
+                                    } catch (Exception e){
+                                        e.printStackTrace();
                                     }
                                 }
                             });
+                            AppSettingSharePref.getInstance(getContext()).setOldDeviceList(AppSettingSharePref.getInstance(getContext()).getDeviceList());
+
                             Thread.sleep(5000);   //1000ms = 1 sec
                         }
                     } catch (InterruptedException e) {
@@ -153,10 +183,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     }
 
-    void changePositionSmoothly(final Marker myMarker, final LatLng newLatLng, final Float bearing) {
+    void changePositionSmoothly(final Marker myMarker, final LatLng finalPosition, final Float bearing, final LatLng startPosition) {
 
-        final LatLng startPosition = new LatLng(WebUrl.LAST_DRIVER_LATITUDE, WebUrl.LAST_DRIVER_LONGITUDE);
-        final LatLng finalPosition = newLatLng;
         final Handler handler = new Handler();
         final long start = SystemClock.uptimeMillis();
         final Interpolator interpolator = new AccelerateDecelerateInterpolator();
@@ -201,26 +229,20 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onPause() {
         super.onPause();
-        WorkManager.getInstance(getContext()).cancelAllWorkByTag("ferDriverLoc");
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        workManager = WorkManager.getInstance(getContext());
-        workRequest = new PeriodicWorkRequest.Builder(GetDriverLocationWorker.class, 15, TimeUnit.MINUTES).addTag("ferDriverLoc").build();
-        workManager.enqueue(workRequest);
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        carMarker =null;
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        carMarker =null;
     }
 }

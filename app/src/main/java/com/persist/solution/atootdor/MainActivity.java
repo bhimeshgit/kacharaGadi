@@ -17,7 +17,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.DownloadManager;
 import android.app.ProgressDialog;
-import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -37,7 +36,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.telephony.PhoneNumberUtils;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
@@ -56,21 +54,15 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.messaging.FirebaseMessaging;
-import com.persist.solution.atootdor.service.DriverLocationUpdateWorker;
-import com.persist.solution.atootdor.service.UserUpdateLocationWorker;
+import com.persist.solution.atootdor.service.GetAllVehicleLocationWorker;
 import com.persist.solution.atootdor.utils.AppSettingSharePref;
 import com.persist.solution.atootdor.utils.JsonParserVolley;
 import com.persist.solution.atootdor.utils.ProgressDialogHelper;
 import com.persist.solution.atootdor.utils.UrlHander;
 import com.persist.solution.atootdor.utils.WebUrl;
-import com.persist.solution.atootdor.R;
-
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -97,6 +89,8 @@ public class MainActivity extends AppCompatActivity   {
     private final static int FILECHOOSER_RESULTCODE = 1;
     private final String share_link_url = "http://www.atootdor.com";
     MapFragment map_fragment;
+    private WorkManager workManager;
+    private WorkRequest workRequest;
 
     FloatingActionButton mAddFab;
     public static final int MULTIPLE_PERMISSIONS = 10;
@@ -139,6 +133,17 @@ public class MainActivity extends AppCompatActivity   {
         main_content = findViewById(R.id.main_content);
         imageView2 = findViewById(R.id.imageView2);
         setWebView();
+        startLocationTrackingWorker();
+    }
+
+    private void startLocationTrackingWorker(){
+        workManager = WorkManager.getInstance(this);
+        workRequest = new PeriodicWorkRequest.Builder(GetAllVehicleLocationWorker.class, 15, TimeUnit.MINUTES).addTag("ferDriverLoc").build();
+        workManager.enqueue(workRequest);
+    }
+
+    private void stopLocationTrackingWorker(){
+        WorkManager.getInstance(this).cancelAllWorkByTag("ferDriverLoc");
     }
 
     private void addMapFragment() {
@@ -151,7 +156,6 @@ public class MainActivity extends AppCompatActivity   {
                 .beginTransaction()
                 .replace(R.id.mapFrameLay, map_fragment)
                 .commit();
-        AppSettingSharePref.getInstance(MainActivity.this).setDriverTrackingVisible(true);
     }
 
     private void setWebView(){
@@ -333,6 +337,7 @@ public class MainActivity extends AppCompatActivity   {
 //                shareApplication();
 //                shareApplication("enter ur message here", "application Name");
         //        testMap();;
+//                addMapFragment();
             }
         });
 
@@ -563,7 +568,6 @@ public class MainActivity extends AppCompatActivity   {
     @Override
     public void onBackPressed() {
         if (mainLinLay.getVisibility() == View.GONE) {
-            if (AppSettingSharePref.getInstance(MainActivity.this).isDriverTrackingVisible()) {
                 mainLinLay.setVisibility(View.VISIBLE);
                 mapFrameLay.setVisibility(View.GONE);
                 if (map_fragment != null) {
@@ -571,9 +575,7 @@ public class MainActivity extends AppCompatActivity   {
                     getSupportFragmentManager().popBackStack();
                     map_fragment = null;
                 }
-                AppSettingSharePref.getInstance(MainActivity.this).setDriverTrackingVisible(false);
                 return;
-            }
         }
 
         if(main_content.getVisibility() == View.GONE){
@@ -731,9 +733,6 @@ public class MainActivity extends AppCompatActivity   {
                 }
             });
 
-            if (mode.equals("user")) {
-                startUpdatingUserLocation();
-            }
 
         }
 
@@ -883,17 +882,6 @@ public class MainActivity extends AppCompatActivity   {
         }
 
 
-        @JavascriptInterface
-        public void onClickPdfReportView(String pdfUrl) {
-
-            Handler handler = new Handler(Looper.getMainLooper());
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    openPdfReport(pdfUrl);
-                }
-            });
-        }
 
         @JavascriptInterface
         public void shareApplication(String msg, String app_name) {
@@ -907,62 +895,6 @@ public class MainActivity extends AppCompatActivity   {
             });
         }
 
-        @JavascriptInterface
-        public void showDriverTracking(String driverMob, String driverLatitude, String driverLong, String pickupLat, String pickupLong) {
-
-            Handler handler = new Handler(Looper.getMainLooper());
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    WebUrl.DRIVER_LATITUDE = Double.parseDouble(driverLatitude);
-                    WebUrl.DRIVER_LONGITUDE = Double.parseDouble(driverLong);
-                    PICKUP_LATITUDE = Double.parseDouble(pickupLat);
-                    PICKUP_LONGITUDE = Double.parseDouble(pickupLong);
-                    AppSettingSharePref.getInstance(MainActivity.this).setDriverMobNo(driverMob);
-                    addMapFragment();
-                }
-            });
-        }
-
-        @JavascriptInterface
-        public void startDriverTracking(String mobNo, String uid) {
-
-            Handler handler = new Handler(Looper.getMainLooper());
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    Log.d("iss", "startDriverTracking called mobNo"+mobNo);
-                    AppSettingSharePref.getInstance(mContext).setDriverMob(mobNo);
-                    startTracking();
-                }
-            });
-        }
-
-        @JavascriptInterface
-        public void showUserLocationToDriver(String uid, String pickup_latitude, String pickup_longitide) {
-            Handler handler = new Handler(Looper.getMainLooper());
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    displayUserLocationToDriver(uid, pickup_latitude, pickup_longitide);
-                }
-            });
-        }
-
-
-        @JavascriptInterface
-        public void startRide(String uid, String destLat, String longiude) {
-            Handler handler = new Handler(Looper.getMainLooper());
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    showUserRideToDriver(destLat, longiude);
-                }
-            });
-        }
-
-
-
 
         @JavascriptInterface
         public void setUserPopup() {
@@ -971,14 +903,6 @@ public class MainActivity extends AppCompatActivity   {
 
     }
 
-    private void startTracking() {
-        WorkManager workManager;
-        WorkRequest workRequest;
-        workManager = WorkManager.getInstance(getApplicationContext());
-        workRequest = new PeriodicWorkRequest.Builder(DriverLocationUpdateWorker.class, 15, TimeUnit.MINUTES).build();
-        workManager.enqueue(workRequest);
-//        workManager.cancelWorkById(workRequest.getId());
-    }
 
     private void askLocationPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -994,6 +918,7 @@ public class MainActivity extends AppCompatActivity   {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        stopLocationTrackingWorker();
     }
 
     private void downloadFile(String url, String fileName){
@@ -1119,8 +1044,6 @@ public class MainActivity extends AppCompatActivity   {
     }
 
 
-
-
     private File createImageFile() throws IOException {
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
@@ -1135,49 +1058,5 @@ public class MainActivity extends AppCompatActivity   {
         return imageFile;
     }
 
-
-    private void openPdfReport(String pdfUrl){
-        Intent intent = new Intent(MainActivity.this, Sample.class);
-        intent.putExtra("pdf_url", pdfUrl);
-        startActivity(intent);
-    }
-
-    private void displayUserLocationToDriver(String uid, String pickup_latitude, String pickup_longitide) {
-        String sourceLatlng = WebUrl.DRIVER_LATITUDE+ ","+ WebUrl.DRIVER_LONGITUDE;
-        String destLatlng = pickup_latitude + "," + pickup_longitide;
-        Uri uri = Uri.parse("https://www.google.co.in/maps/dir/"+sourceLatlng+"/"+destLatlng);
-        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-        intent.setPackage("com.google.android.apps.maps");
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
-    }
-
-    private void startUpdatingUserLocation(){
-        WorkManager workManager;
-        WorkRequest workRequest;
-        workManager = WorkManager.getInstance(getApplicationContext());
-        workRequest = new PeriodicWorkRequest.Builder(UserUpdateLocationWorker.class, 15, TimeUnit.MINUTES).build();
-        workManager.enqueue(workRequest);
-//        workManager.cancelWorkById(workRequest.getId());
-    }
-
-    private void showUserRideToDriver(String destLat, String destLongitude) {
-        String sourceLatlng = WebUrl.DRIVER_LATITUDE+ ","+ WebUrl.DRIVER_LONGITUDE;
-        String destLatlng = destLat + "," + destLongitude;
-        Uri uri = Uri.parse("https://www.google.co.in/maps/dir/"+sourceLatlng+"/"+destLatlng);
-        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-        intent.setPackage("com.google.android.apps.maps");
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
-    }
-
-    public void testMap(){
-//        WebUrl.DRIVER_LATITUDE = 21.145702;//Double.parseDouble(driverLatitude);
-//        WebUrl.DRIVER_LONGITUDE = 79.006933;//Double.parseDouble(driverLong);
-        PICKUP_LATITUDE = 21.10895;//Double.parseDouble(21.10895);
-        PICKUP_LONGITUDE = 79.1082105 ;//Double.parseDouble(pickupLong);
-        AppSettingSharePref.getInstance(MainActivity.this).setDriverMobNo("12345");
-        addMapFragment();
-    }
 
 }

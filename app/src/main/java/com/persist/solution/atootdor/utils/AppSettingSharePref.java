@@ -86,42 +86,33 @@ public class AppSettingSharePref {
         return username;
     }
 
-    public void setDriverMobNo(String token) {
-        editor.putString("driver_mobile", token);
-        editor.apply();
-    }
-
-    public String getDriverMobNo() {
+    public String getDeviceList() {
         String username = "";
         try {
-            username = sharePre.getString("driver_mobile", "");
+            username = sharePre.getString("device_list", "");
         } catch (Exception e) {
             e.printStackTrace();
         }
         return username;
     }
 
-    public String getDriverMob() {
+    public void setDeviceList(String device_list) {
+        editor.putString("device_list", device_list);
+        editor.apply();
+    }
+
+    public String getOldDeviceList() {
         String username = "";
         try {
-            username = sharePre.getString("driver_mobile", "");
+            username = sharePre.getString("old_device_list", "");
         } catch (Exception e) {
             e.printStackTrace();
         }
         return username;
     }
 
-    public void setDriverMob(String token) {
-        editor.putString("driver_mobile", token);
-        editor.apply();
-    }
-
-    public boolean isDriverTrackingVisible() {
-        return  sharePre.getBoolean("driver_tracking_visible", false);
-    }
-
-    public void setDriverTrackingVisible(boolean username) {
-        editor.putBoolean("driver_tracking_visible", username);
+    public void setOldDeviceList(String old_device_list) {
+        editor.putString("old_device_list", old_device_list);
         editor.apply();
     }
 }

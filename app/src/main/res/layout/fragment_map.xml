@@ -12,17 +12,4 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-     <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/startRideBtn"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginStart="5dp"
-        android:layout_marginTop="5dp"
-        android:layout_marginEnd="5dp"
-        android:layout_marginBottom="5dp"
-        android:background="@color/BurlyWood"
-        android:text="Start Ride" />
-
 </RelativeLayout>

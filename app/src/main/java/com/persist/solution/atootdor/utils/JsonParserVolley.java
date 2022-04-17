@@ -3,6 +3,7 @@ package com.persist.solution.atootdor.utils;
 import android.content.Context;
 import android.util.Log;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
@@ -16,14 +17,21 @@ public class JsonParserVolley {
     Context context;
     String jsonresponse;
 
+    private Map<String, String> params;
+
     private Map<String, String> header;
 
     public JsonParserVolley(Context context) {
         this.context = context;
+        params = new HashMap<>();
         header = new HashMap<>();
     }
 
     public void addParameter(String key, String value) {
+        params.put(key, value);
+    }
+
+    public void addHeader(String key, String value) {
         header.put(key, value);
     }
 
@@ -46,6 +54,11 @@ public class JsonParserVolley {
         }) {
             @Override
             protected Map<String, String> getParams() {
+                return params;
+            }
+
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
                 return header;
             }
         };
