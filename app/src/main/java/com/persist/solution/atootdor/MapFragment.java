@@ -19,7 +19,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.Interpolator;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Spinner;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -39,7 +42,9 @@ import com.persist.solution.atootdor.utils.WebUrl;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
@@ -54,6 +59,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private Button startRideBtn;
     private Thread thread;
     private MainActivity mainActivity;
+    private List<String> veh_List = new ArrayList<>();
+    private boolean isVehList = false;
     public MapFragment(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
         // Required empty public constructor
@@ -61,6 +68,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     private ArrayList<Marker> carMarkerList= new ArrayList<>();
     private HashMap<String, Marker> carMap = new HashMap<>();
+    private HashMap<String, LatLng> carLatLngMap = new HashMap<>();
+    Spinner spino ;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -79,7 +88,47 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         SupportMapFragment supportMapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.google_map);
         supportMapFragment.getMapAsync(this);
+        spino = view.findViewById(R.id.vehicle_spinner);
+        veh_List.add("All");
+        setSpinner();
+    }
 
+    private void setSpinner(){
+
+        spino.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                if(carLatLngMap.containsKey(veh_List.get(i))){
+                    for (String vehNo: carMap.keySet()) {
+                        if(!vehNo.equals(veh_List.get(i))){
+                            carMap.get(vehNo).remove();
+                        }
+                    }
+
+                    CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(
+                            carLatLngMap.get(veh_List.get(i)), 17f);
+                    mMap.animateCamera(cameraUpdate);
+                }else{
+                    for (String vehNo: carMap.keySet()) {
+                        carMap.get(vehNo).remove();
+                    }
+                    for (String vehNo: carLatLngMap.keySet()) {
+                        mMap.addMarker(new MarkerOptions().position(carLatLngMap.get(vehNo)).
+                                flat(true).icon(BitmapDescriptorFactory.fromBitmap(BitMapMarker)));
+                    }
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
+        ArrayAdapter ad = new ArrayAdapter(getContext(), android.R.layout.simple_spinner_item, veh_List);
+        ad.setDropDownViewResource(
+                android.R.layout
+                        .simple_spinner_dropdown_item);
+        spino.setAdapter(ad);
     }
 
 
@@ -108,67 +157,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                             getActivity().runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    try {
-                                        if (MapFragment.this.isVisible()) {
-//                                            if(rotation_temp == 0){
-//                                                AppSettingSharePref.getInstance(getContext()).setDeviceList(WebUrl.RESP1);
-//                                                AppSettingSharePref.getInstance(getContext()).setOldDeviceList(WebUrl.RESP1);
-//                                            } else{
-//                                                AppSettingSharePref.getInstance(getContext()).setOldDeviceList(WebUrl.RESP1);
-//                                                AppSettingSharePref.getInstance(getContext()).setDeviceList(WebUrl.RESP2);
-//                                            }
-
-
-                                            String newData = AppSettingSharePref.getInstance(getContext()).getDeviceList();
-                                            String oldData = AppSettingSharePref.getInstance(getContext()).getOldDeviceList();
-
-
-                                            if (newData != null && oldData != null) {
-                                                DataResponse newDataObj = new Gson().fromJson(newData, DataResponse.class);
-                                                DataResponse oldDataObj = new Gson().fromJson(oldData, DataResponse.class);
-                                                if (newDataObj != null) {
-                                                    for (int i = 0; i < newDataObj.count; i++) {
-                                                        Data data = newDataObj.data.get(i).data;
-                                                        double newLat = Double.parseDouble(data.cordinate.get(0));
-                                                        double newLong = Double.parseDouble(data.cordinate.get(1));
-                                                        LatLng newLatLong = new LatLng(newLat, newLong);
-                                                        for (Data oldDataListObj : oldDataObj.data) {
-                                                            if (data.vehicle_number.equals(oldDataListObj.data.vehicle_number)) {
-                                                                double oldLat = Double.parseDouble(oldDataListObj.data.cordinate.get(0));
-                                                                double oldLong = Double.parseDouble(oldDataListObj.data.cordinate.get(1));
-                                                                LatLng oldLatLong = new LatLng(oldLat, oldLong);
-                                                                Marker carMarker = null;
-                                                                if (!carMap.containsKey(oldDataListObj.data.vehicle_number)) {
-                                                                    carMarker = mMap.addMarker(new MarkerOptions().position(newLatLong).
-                                                                            flat(true).icon(BitmapDescriptorFactory.fromBitmap(BitMapMarker)));
-                                                                    CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(
-                                                                            newLatLong, 17f);
-                                                                    mMap.animateCamera(cameraUpdate);
-                                                                } else {
-                                                                    carMarker = carMap.get(oldDataListObj.data.vehicle_number);
-                                                                }
-                                                                if (!carMap.containsKey(oldDataListObj.data.vehicle_number)) {
-                                                                    carMap.put(oldDataListObj.data.vehicle_number, carMarker);
-                                                                }
-                                                                Bearing = getBearing(oldLong, newLong, oldLat, newLat);
-
-//                                                        Log.d("iss", "lst=" + WebUrl.LAST_DRIVER_LATITUDE + " lat=" + WebUrl.DRIVER_LATITUDE);
-                                                                changePositionSmoothly(carMarker, newLatLong, Bearing, oldLatLong);
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-                                                }
-
-                                            }
-
-                                        }
-                                    } catch (Exception e){
-                                        e.printStackTrace();
-                                    }
+                                    allVehicleTracking();
                                 }
                             });
                             AppSettingSharePref.getInstance(getContext()).setOldDeviceList(AppSettingSharePref.getInstance(getContext()).getDeviceList());
+
+
 
                             Thread.sleep(5000);   //1000ms = 1 sec
                         }
@@ -181,6 +175,17 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         thread.start();
 
+    }
+
+    private void setVehList(){
+        if(!isVehList){
+            Set<String> key = carMap.keySet();
+            for (String k: key) {
+                veh_List.add(k);
+            }
+            isVehList= true;
+            setSpinner();
+        }
     }
 
     void changePositionSmoothly(final Marker myMarker, final LatLng finalPosition, final Float bearing, final LatLng startPosition) {
@@ -244,5 +249,68 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onDestroy() {
         super.onDestroy();
+    }
+
+    private  void allVehicleTracking(){
+        try {
+            if (MapFragment.this.isVisible()) {
+//                                            if(rotation_temp == 0){
+//                                                AppSettingSharePref.getInstance(getContext()).setDeviceList(WebUrl.RESP1);
+//                                                AppSettingSharePref.getInstance(getContext()).setOldDeviceList(WebUrl.RESP1);
+//                                            } else{
+//                                                AppSettingSharePref.getInstance(getContext()).setOldDeviceList(WebUrl.RESP1);
+//                                                AppSettingSharePref.getInstance(getContext()).setDeviceList(WebUrl.RESP2);
+//                                            }
+
+
+                String newData = AppSettingSharePref.getInstance(getContext()).getDeviceList();
+                String oldData = AppSettingSharePref.getInstance(getContext()).getOldDeviceList();
+
+
+                if (newData != null && oldData != null) {
+                    DataResponse newDataObj = new Gson().fromJson(newData, DataResponse.class);
+                    DataResponse oldDataObj = new Gson().fromJson(oldData, DataResponse.class);
+                    if (newDataObj != null) {
+                        for (int i = 0; i < newDataObj.count; i++) {
+                            Data data = newDataObj.data.get(i).data;
+                            double newLat = Double.parseDouble(data.cordinate.get(0));
+                            double newLong = Double.parseDouble(data.cordinate.get(1));
+                            LatLng newLatLong = new LatLng(newLat, newLong);
+                            carLatLngMap.put(data.vehicle_number,newLatLong);
+                            for (Data oldDataListObj : oldDataObj.data) {
+                                if (data.vehicle_number.equals(oldDataListObj.data.vehicle_number)) {
+                                    double oldLat = Double.parseDouble(oldDataListObj.data.cordinate.get(0));
+                                    double oldLong = Double.parseDouble(oldDataListObj.data.cordinate.get(1));
+                                    LatLng oldLatLong = new LatLng(oldLat, oldLong);
+                                    Marker carMarker = null;
+                                    if (!carMap.containsKey(oldDataListObj.data.vehicle_number)) {
+                                        carMarker = mMap.addMarker(new MarkerOptions().position(newLatLong).
+                                                flat(true).icon(BitmapDescriptorFactory.fromBitmap(BitMapMarker)));
+                                        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(
+                                                newLatLong, 17f);
+                                        mMap.animateCamera(cameraUpdate);
+                                    } else {
+                                        carMarker = carMap.get(oldDataListObj.data.vehicle_number);
+                                    }
+                                    if (!carMap.containsKey(oldDataListObj.data.vehicle_number)) {
+                                        carMap.put(oldDataListObj.data.vehicle_number, carMarker);
+                                    }
+                                    Bearing = getBearing(oldLong, newLong, oldLat, newLat);
+
+//                                                        Log.d("iss", "lst=" + WebUrl.LAST_DRIVER_LATITUDE + " lat=" + WebUrl.DRIVER_LATITUDE);
+                                    changePositionSmoothly(carMarker, newLatLong, Bearing, oldLatLong);
+                                    break;
+                                }
+                            }
+                        }
+                        setVehList();
+                    }
+
+                }
+
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+        }
     }
 }

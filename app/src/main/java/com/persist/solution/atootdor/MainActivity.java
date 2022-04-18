@@ -337,7 +337,7 @@ public class MainActivity extends AppCompatActivity   {
 //                shareApplication();
 //                shareApplication("enter ur message here", "application Name");
         //        testMap();;
-//                addMapFragment();
+                addMapFragment();
             }
         });
 
