@@ -24,6 +24,12 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 
+import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -33,6 +39,9 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.gson.Gson;
 import com.persist.solution.atootdor.service.GetAllVehicleLocationWorker;
 import com.persist.solution.atootdor.utils.AppSettingSharePref;
@@ -113,8 +122,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                         carMap.get(vehNo).remove();
                     }
                     for (String vehNo: carLatLngMap.keySet()) {
-                        mMap.addMarker(new MarkerOptions().position(carLatLngMap.get(vehNo)).
-                                flat(true).icon(BitmapDescriptorFactory.fromBitmap(BitMapMarker)));
+                        carMap.put(vehNo,mMap.addMarker(new MarkerOptions().position(carLatLngMap.get(vehNo)).
+                                flat(true).icon(BitmapDescriptorFactory.fromBitmap(BitMapMarker))));
                     }
                 }
             }
@@ -313,4 +322,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             e.printStackTrace();
         }
     }
+
+
+
 }
