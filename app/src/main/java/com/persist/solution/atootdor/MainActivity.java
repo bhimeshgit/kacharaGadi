@@ -901,6 +901,17 @@ public class MainActivity extends AppCompatActivity   {
             AppSettingSharePref.getInstance(MainActivity.this).setPopup();
         }
 
+        @JavascriptInterface
+        public void showAllVehicleTracking() {
+
+            Handler handler = new Handler(Looper.getMainLooper());
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    addMapFragment();
+                }
+            });
+        }
     }
 
 
