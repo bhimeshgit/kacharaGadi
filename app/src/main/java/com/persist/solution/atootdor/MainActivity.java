@@ -162,8 +162,8 @@ public class MainActivity extends AppCompatActivity   {
         if(Utils.isNetworkAvailable(MainActivity.this)) {
             getDataFromNotification();
         } else {
-            myWebView.loadUrl(offline_url);
-            currentUrl = offline_url;
+//            myWebView.loadUrl(offline_url);
+//            currentUrl = offline_url;
         }
 
         myWebView.getSettings().setJavaScriptEnabled(true);
@@ -291,15 +291,15 @@ public class MainActivity extends AppCompatActivity   {
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                boolean netAvailable = Utils.isNetworkAvailable(MainActivity.this);
-                if( netAvailable && currentUrl.equals(offline_url)) {
-                    myWebView.goBack();
-                }
-                if(!netAvailable){
-                    currentUrl = offline_url;
-                    myWebView.loadUrl(currentUrl);
-                    url = offline_url;
-                }
+//                boolean netAvailable = Utils.isNetworkAvailable(MainActivity.this);
+//                if( netAvailable && currentUrl.equals(offline_url)) {
+//                    myWebView.goBack();
+//                }
+//                if(!netAvailable){
+//                    currentUrl = offline_url;
+//                    myWebView.loadUrl(currentUrl);
+//                    url = offline_url;
+//                }
 
                 boolean result = UrlHander.checkUrl(MainActivity.this, url);
                 if (result) {
@@ -370,9 +370,9 @@ public class MainActivity extends AppCompatActivity   {
                     handler.post(new Runnable() {
                         @Override
                         public void run() {
-                            myWebView.loadUrl(offline_url);
-                            currentUrl = offline_url;
-                            offline_url_flag = true;
+//                            myWebView.loadUrl(offline_url);
+//                            currentUrl = offline_url;
+//                            offline_url_flag = true;
                         }
                     });
 
