@@ -29,23 +29,7 @@ public class GetAllVehicleLocationWorker extends Worker {
     void updateLocation() throws InterruptedException {
         while(!workedStopped){
             Thread.sleep(5000);
-            final JsonParserVolley jsonParserVolley = new JsonParserVolley(getApplicationContext());
-            jsonParserVolley.addHeader("Authorization",  "Cw87c8ewHiR5AifXsWVW");
-            jsonParserVolley.executeRequest(Request.Method.GET, WebUrl.GET_ALL_VEHICLE_LOCATION,new JsonParserVolley.VolleyCallback() {
-                    @Override
-                    public void getResponse(String response) throws InterruptedException {
-                        try {
-                            AppSettingSharePref.getInstance(getApplicationContext()).setDeviceList(response);
-                            if(AppSettingSharePref.getInstance(getApplicationContext()).getOldDeviceList() == null || AppSettingSharePref.getInstance(getApplicationContext()).getOldDeviceList().equals("") ){
-                                AppSettingSharePref.getInstance(getApplicationContext()).setOldDeviceList(AppSettingSharePref.getInstance(getApplicationContext()).getDeviceList());
-                            }
-                            DataResponse locoNavPojo =   new Gson().fromJson( response, DataResponse.class );
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            );
+
         }
 
     }

@@ -144,8 +144,14 @@ public class MainActivity extends AppCompatActivity   {
         main_content = findViewById(R.id.main_content);
         imageView2 = findViewById(R.id.imageView2);
         setWebView();
-        startLocationTrackingWorker();
+//        startLocationTrackingWorker();
         turnOnGPS();
+        startUpdatingUserLocation();
+//        try {
+//            if(!AppSettingSharePref.getInstance(this).getUid().equals("")) {
+//                startUpdatingUserLocation();
+//            }
+//        } catch (Exception e){}
     }
 
     private void startLocationTrackingWorker(){
@@ -419,11 +425,6 @@ public class MainActivity extends AppCompatActivity   {
         super.onStart();
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 //            checkSettingsAndStartLocationUpdates();
-            try {
-                if(!AppSettingSharePref.getInstance(this).getUid().equals("")) {
-                    startUpdatingUserLocation();
-                }
-            } catch (Exception e){}
         } else {
                 askLocationPermission();
         }
@@ -768,6 +769,7 @@ public class MainActivity extends AppCompatActivity   {
                                 @Override
                                 public void getResponse(String response) {
                                     try {
+                                        startUpdatingUserLocation();
                                         hideProgressLoad();
                                         Log.d("iss","response="+response);
 
@@ -780,7 +782,7 @@ public class MainActivity extends AppCompatActivity   {
                     );
                 }
             });
-            startUpdatingUserLocation();
+
 
         }
 
@@ -1011,9 +1013,6 @@ public class MainActivity extends AppCompatActivity   {
             if (mNetworkCallback != null && mConnectivityManager != null) {
                 mConnectivityManager.unregisterNetworkCallback(mNetworkCallback);
             }
-            if(workManagerUser !=null) {
-                workManagerUser.cancelWorkById(workRequest.getId());
-            }
         } catch (Exception e){ }
     }
 
@@ -1126,7 +1125,7 @@ public class MainActivity extends AppCompatActivity   {
 
         workManagerUser = WorkManager.getInstance(getApplicationContext());
         workRequestUser = new PeriodicWorkRequest.Builder(UserUpdateLocationWorker.class, 15, TimeUnit.MINUTES).build();
-        workManager.enqueue(workRequest);
+        workManagerUser.enqueue(workRequestUser);
 //        workManager.cancelWorkById(workRequest.getId());
     }
 

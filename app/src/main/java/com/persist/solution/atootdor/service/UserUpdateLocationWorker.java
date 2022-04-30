@@ -21,8 +21,10 @@ import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.gson.Gson;
 import com.persist.solution.atootdor.MainActivity;
 import com.persist.solution.atootdor.utils.AppSettingSharePref;
+import com.persist.solution.atootdor.utils.DataResponse;
 import com.persist.solution.atootdor.utils.JsonParserVolley;
 import com.persist.solution.atootdor.utils.WebUrl;
 
@@ -59,27 +61,50 @@ public class UserUpdateLocationWorker extends Worker {
     void updateLocation() throws InterruptedException {
         while(!workedStopped){
             Thread.sleep(5000);
-            Log.d("iss", "Drivver = " + MainActivity.USER_LATITUDE + "  " +MainActivity.USER_LONGITUDE);
-            if(MainActivity.USER_LATITUDE != 0 && MainActivity.USER_LONGITUDE != 0) {
-                final JsonParserVolley jsonParserVolley = new JsonParserVolley(context);
-                jsonParserVolley.addParameter("uid", AppSettingSharePref.getInstance(context).getUid());
-                jsonParserVolley.addParameter("lat", MainActivity.USER_LATITUDE + "");
-                jsonParserVolley.addParameter("lang", MainActivity.USER_LONGITUDE + "");
-                jsonParserVolley.executeRequest(Request.Method.POST, WebUrl.CUSTOMER_UPDATE_LOCATION_URL, new JsonParserVolley.VolleyCallback() {
-                            @Override
-                            public void getResponse(String response) {
-
-                                try {
-                                    Log.d("iss", "response custome location update=" + response);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
+            final JsonParserVolley jsonParserVolley = new JsonParserVolley(getApplicationContext());
+            jsonParserVolley.addHeader("Authorization",  "Cw87c8ewHiR5AifXsWVW");
+            jsonParserVolley.executeRequest(Request.Method.GET, WebUrl.GET_ALL_VEHICLE_LOCATION,new JsonParserVolley.VolleyCallback() {
+                        @Override
+                        public void getResponse(String response) throws InterruptedException {
+                            try {
+                                AppSettingSharePref.getInstance(getApplicationContext()).setDeviceList(response);
+                                if(AppSettingSharePref.getInstance(getApplicationContext()).getOldDeviceList() == null || AppSettingSharePref.getInstance(getApplicationContext()).getOldDeviceList().equals("") ){
+                                    AppSettingSharePref.getInstance(getApplicationContext()).setOldDeviceList(AppSettingSharePref.getInstance(getApplicationContext()).getDeviceList());
                                 }
+                                DataResponse locoNavPojo =   new Gson().fromJson( response, DataResponse.class );
+                                updateUserLocation();
+                            } catch (Exception e) {
+                                e.printStackTrace();
                             }
                         }
-                );
-            }
+                    }
+            );
+
         }
 
+    }
+
+
+    private void updateUserLocation(){
+        Log.d("iss", "Drivver = " + MainActivity.USER_LATITUDE + "  " +MainActivity.USER_LONGITUDE);
+        if(MainActivity.USER_LATITUDE != 0 && MainActivity.USER_LONGITUDE != 0) {
+            final JsonParserVolley jsonParserVolley = new JsonParserVolley(context);
+            jsonParserVolley.addParameter("uid", AppSettingSharePref.getInstance(context).getUid());
+            jsonParserVolley.addParameter("lat", MainActivity.USER_LATITUDE + "");
+            jsonParserVolley.addParameter("lang", MainActivity.USER_LONGITUDE + "");
+            jsonParserVolley.executeRequest(Request.Method.POST, WebUrl.CUSTOMER_UPDATE_LOCATION_URL, new JsonParserVolley.VolleyCallback() {
+                        @Override
+                        public void getResponse(String response) {
+
+                            try {
+                                Log.d("iss", "response custome location update=" + response);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+            );
+        }
     }
 
     private void startLocationUpdates() {
