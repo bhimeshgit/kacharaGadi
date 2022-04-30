@@ -285,6 +285,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                             double newLat = Double.parseDouble(data.cordinate.get(0));
                             double newLong = Double.parseDouble(data.cordinate.get(1));
                             LatLng newLatLong = new LatLng(newLat, newLong);
+                            if(data.vehicle_number.equals("MH36AA2484")){
+                                continue;
+                            }
                             carLatLngMap.put(data.vehicle_number,newLatLong);
                             for (Data oldDataListObj : oldDataObj.data) {
                                 if (data.vehicle_number.equals(oldDataListObj.data.vehicle_number)) {
