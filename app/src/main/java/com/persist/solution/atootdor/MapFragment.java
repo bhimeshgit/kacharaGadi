@@ -109,10 +109,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                 if(carLatLngMap.containsKey(veh_List.get(i))){
                     for (String vehNo: carMap.keySet()) {
-                        if(!vehNo.equals(veh_List.get(i))){
+//                        if(!vehNo.equals(veh_List.get(i))){
                             carMap.get(vehNo).remove();
-                        }
+//                        }
                     }
+
+                    carMap.put(veh_List.get(i),mMap.addMarker(new MarkerOptions().position(carLatLngMap.get(veh_List.get(i))).
+                            flat(true).icon(BitmapDescriptorFactory.fromBitmap(BitMapMarker))));
 
                     CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(
                             carLatLngMap.get(veh_List.get(i)), 17f);

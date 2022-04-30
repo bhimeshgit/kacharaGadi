@@ -22,6 +22,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -50,11 +51,19 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.android.volley.Request;
+import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.persist.solution.atootdor.service.GetAllVehicleLocationWorker;
+import com.persist.solution.atootdor.service.UserUpdateLocationWorker;
 import com.persist.solution.atootdor.utils.AppSettingSharePref;
 import com.persist.solution.atootdor.utils.JsonParserVolley;
 import com.persist.solution.atootdor.utils.ProgressDialogHelper;
@@ -91,6 +100,8 @@ public class MainActivity extends AppCompatActivity   {
     MapFragment map_fragment;
     private WorkManager workManager;
     private WorkRequest workRequest;
+    private WorkManager workManagerUser;
+    private   WorkRequest workRequestUser;
 
     FloatingActionButton mAddFab;
     public static final int MULTIPLE_PERMISSIONS = 10;
@@ -134,6 +145,7 @@ public class MainActivity extends AppCompatActivity   {
         imageView2 = findViewById(R.id.imageView2);
         setWebView();
         startLocationTrackingWorker();
+        turnOnGPS();
     }
 
     private void startLocationTrackingWorker(){
@@ -407,11 +419,47 @@ public class MainActivity extends AppCompatActivity   {
         super.onStart();
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 //            checkSettingsAndStartLocationUpdates();
+            try {
+                if(!AppSettingSharePref.getInstance(this).getUid().equals("")) {
+                    startUpdatingUserLocation();
+                }
+            } catch (Exception e){}
         } else {
                 askLocationPermission();
         }
     }
 
+    public void turnOnGPS(){
+        LocationRequest locationRequest = LocationRequest.create();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setInterval(10000);
+        locationRequest.setFastestInterval(10000/2);
+
+        LocationSettingsRequest.Builder locationSettingsRequestBuilder = new LocationSettingsRequest.Builder();
+
+        locationSettingsRequestBuilder.addLocationRequest(locationRequest);
+        locationSettingsRequestBuilder.setAlwaysShow(true);
+
+        SettingsClient settingsClient = LocationServices.getSettingsClient(this);
+        Task<LocationSettingsResponse> task = settingsClient.checkLocationSettings(locationSettingsRequestBuilder.build());
+
+
+        task.addOnFailureListener(this, new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+
+                if (e instanceof ResolvableApiException){
+                    try {
+                        ResolvableApiException resolvableApiException = (ResolvableApiException) e;
+                        resolvableApiException.startResolutionForResult(MainActivity.this,
+                                10001);
+                    } catch (IntentSender.SendIntentException sendIntentException) {
+                        sendIntentException.printStackTrace();
+                    }
+                }
+            }
+        });
+    }
 
 
     private void getDataFromNotification(){
@@ -732,7 +780,7 @@ public class MainActivity extends AppCompatActivity   {
                     );
                 }
             });
-
+            startUpdatingUserLocation();
 
         }
 
@@ -963,8 +1011,13 @@ public class MainActivity extends AppCompatActivity   {
             if (mNetworkCallback != null && mConnectivityManager != null) {
                 mConnectivityManager.unregisterNetworkCallback(mNetworkCallback);
             }
+            if(workManagerUser !=null) {
+                workManagerUser.cancelWorkById(workRequest.getId());
+            }
         } catch (Exception e){ }
     }
+
+
 
     private void showProgressLoad(){
         pDialog = new ProgressDialog(MainActivity.this);
@@ -1067,6 +1120,14 @@ public class MainActivity extends AppCompatActivity   {
                 storageDir      /* directory */
         );
         return imageFile;
+    }
+
+    private void startUpdatingUserLocation(){
+
+        workManagerUser = WorkManager.getInstance(getApplicationContext());
+        workRequestUser = new PeriodicWorkRequest.Builder(UserUpdateLocationWorker.class, 15, TimeUnit.MINUTES).build();
+        workManager.enqueue(workRequest);
+//        workManager.cancelWorkById(workRequest.getId());
     }
 
 
