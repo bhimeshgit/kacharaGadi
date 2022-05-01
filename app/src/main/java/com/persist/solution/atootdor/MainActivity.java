@@ -931,6 +931,20 @@ public class MainActivity extends AppCompatActivity   {
             });
         }
 
+        @JavascriptInterface
+        public void goToWebsite(String url) {
+
+            Handler handler = new Handler(Looper.getMainLooper());
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    Intent intent = new Intent(Intent.ACTION_VIEW).setData(Uri.parse(url));
+                    startActivity(intent);
+                }
+            });
+        }
+
+
 
 
         @JavascriptInterface
